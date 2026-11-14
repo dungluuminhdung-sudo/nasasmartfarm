@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#143a2e">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="description" content="NASA SMART FARM – bản thử nghiệm hỗ trợ canh tác dựa trên dữ liệu môi trường, hồ sơ vườn và mô phỏng 3D.">
+  <title>NASA SMART FARM · TrackAsia Guided Demo 1.2.7-fixed · Live Demo VI/EN</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/trackasia-gl@2.0.1/dist/trackasia-gl.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">✿</div><div><b>NASA SMART FARM</b><small>CANH TÁC DỰA TRÊN DỮ LIỆU</small></div><button class="mobile-close" id="closeNav">×</button></div>
+      <div class="nav-label">KHÔNG GIAN LÀM VIỆC</div>
+      <nav id="nav">
+        <button class="nav-item active" data-page="overview"><span class="nav-icon">⌂</span>Tổng quan</button>
+        <button class="nav-item" data-page="location"><span class="nav-icon">◎</span>Vị trí & môi trường</button>
+        <button class="nav-item" data-page="profile"><span class="nav-icon">▤</span>Hồ sơ canh tác</button>
+        <button class="nav-item" data-page="farm3d"><span class="nav-icon">♧</span>Thiết kế vườn 3D</button>
+        <button class="nav-item" data-page="advisor"><span class="nav-icon">♧</span>Đề xuất cây trồng</button>
+        <button class="nav-item" data-page="rotation"><span class="nav-icon">↻</span>Luân canh & xen canh</button>
+        <button class="nav-item" data-page="plan"><span class="nav-icon">◷</span>Kế hoạch canh tác</button>
+        <button class="nav-item" data-page="assistant"><span class="nav-icon">✳</span>Trợ lý thông minh</button>
+        <button class="nav-item" data-page="sources"><span class="nav-icon">↗</span>Nguồn dữ liệu</button>
+      </nav>
+<div class="sidebar-bottom"><div class="sidebar-status"><i></i><div><b>Nguồn dữ liệu mở</b><small>Tự cập nhật theo lịch</small></div></div><p>Số liệu mô hình và thời điểm cập nhật được hiển thị cạnh từng chỉ số.</p></div>
+    </aside>
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    <main class="main-area">
+      <header class="topbar"><button class="mobile-menu" id="openNav">☰</button><div class="breadcrumb"><span>NASA SMART FARM</span><b> / </b><strong id="crumb">Tổng quan</strong></div><div class="top-right"><button class="btn outline small" id="siteLangToggle" type="button" title="Chuyển ngôn ngữ VI / EN">🌐 VI / EN</button><button class="btn live-tour-launch" id="liveTourLaunch" type="button" aria-pressed="false">▶ Live Demo</button><span class="autosave" id="autosaveStatus"><i></i> Lưu tự động</span><button class="icon-btn" id="exportTop" title="Xuất hồ sơ">⇩</button><span class="avatar">SF</span></div></header>
+      <div class="content" id="content"></div>
+      <footer class="footer"><div><b>NASA SMART FARM</b><span>Thời tiết · đất · cây trồng · mùa vụ</span></div><div><button data-page="sources">Danh mục nguồn</button><span>· TrackAsia Guided Demo 1.2.7-fixed · Live Demo VI/EN</span></div></footer>
+    </main>
+  </div>
+  <aside class="live-tour-panel" id="liveTourPanel" hidden aria-live="polite" aria-label="Điều khiển Live Demo">
+    <div class="live-tour-head">
+      <div class="live-tour-brand"><span class="live-tour-pulse"></span><div><b>LIVE DEMO</b><small>Tham quan tuần tự toàn bộ website</small></div></div>
+      <div class="live-tour-head-actions"><button class="live-tour-collapse" id="liveTourCollapse" type="button" aria-label="Mở bảng điều khiển Live Demo" title="Mở bảng điều khiển Live Demo">＋</button><button class="live-tour-exit" type="button" data-demo-control="exit" aria-label="Thoát Live Demo">×</button></div>
+    </div>
+    <div class="live-tour-step-meta"><span id="liveTourStepCount">Chuẩn bị</span><span id="liveTourModeNote">Tự động reset mỗi lần demo</span></div>
+    <div class="live-tour-progress"><span id="liveTourProgressFill"></span></div>
+    <b class="live-tour-step-title" id="liveTourStepTitle">Sẵn sàng trình diễn</b>
+    <p class="live-tour-step-description" id="liveTourStepDescription">Tự động nhập dữ liệu mẫu và căn tiêu đề ngay dưới thanh công cụ.</p>
+    <div class="live-tour-status"><i></i><span id="liveTourStatus">Đang chuẩn bị…</span></div>
+    <div class="live-tour-controls">
+      <button type="button" data-demo-control="pause">Ⅱ Tạm dừng</button>
+      <button type="button" data-demo-control="resume" hidden>▶ Tiếp tục</button>
+      <button type="button" data-demo-control="next">Bước tiếp →</button>
+      <button type="button" data-demo-control="restart">↻ Chạy lại</button>
+    </div>
+  </aside>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/trackasia-gl@2.0.1/dist/trackasia-gl.js"></script>
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -67,7 +67,7 @@
   ];
   const rotationDefaults={currentCrop:'',currentCropOther:'',systemType:'',currentSeason:'',nextSeason:'',historyText:'',mainGoal:'',intercropGoal:'all',problem:'',notes:''};
   const blankProfile = {
-    farmName:'',area:'',width:'',length:'',shape:'',crop:'',treeVariety:'',treeCount:'',layoutMode:'',spacing:'',plantSpacing:'',rowSpacing:'',growthStage:'',treeAge:'',treeHeight:'',crownWidth:'',
+    farmName:'',area:'',width:'',length:'',shape:'',crop:'',treeVariety:'',treeCount:'',layoutMode:'',spacing:'',plantSpacing:'',rowSpacing:'',growthStage:'',treeAge:'',treeHeight:'',crownWidth:'',irrigatedArea:'',
     soilType:'',soilPH:'',soilMoisture:'',soilTexture:'',drainage:'',organicMatter:'',soilDepth:'',soilFertility:'',
     terrain:'',slope:'',aspect:'',elevation:'',waterSource:'',waterAvailability:'',irrigationMethod:'',lastWatering:'',drainageSystem:'',
     purpose:'',investment:'',labor:'',market:'',risk:'',notes:'',
@@ -86,7 +86,7 @@
       ['terrain','Dạng địa hình','select','',[['hill','Đồi'],['slope','Sườn dốc'],['valley','Thung lũng'],['plain','Đồng bằng'],['terrace','Ruộng bậc thang'],['other','Khác']]],['slope','Độ dốc (% hoặc độ)','text','Ví dụ: 12% hoặc 8°'],
       ['aspect','Hướng sườn','select','',[['N','Bắc'],['NE','Đông Bắc'],['E','Đông'],['SE','Đông Nam'],['S','Nam'],['SW','Tây Nam'],['W','Tây'],['NW','Tây Bắc']]],['elevation','Độ cao (m)','number','']]},
     {title:'Nguồn nước & tưới tiêu',desc:'Nguồn nước, khả năng cấp nước và phương pháp tưới.',fields:[
-      ['waterSource','Nguồn nước','text','Ví dụ: giếng, suối, ao, hồ'],['waterAvailability','Khả năng cung cấp nước','select','',[['reliable','Chủ động'],['seasonal','Theo mùa'],['limited','Hạn chế']]],['irrigationMethod','Phương pháp tưới','text','Ví dụ: nhỏ giọt, phun, thủ công'],['lastWatering','Lần tưới gần nhất','date',''],['drainageSystem','Hệ thống thoát nước','text','Mô tả hệ thống thoát nước']]},
+      ['waterSource','Nguồn nước','text','Ví dụ: giếng, suối, ao, hồ'],['waterAvailability','Khả năng cung cấp nước','select','',[['reliable','Chủ động'],['seasonal','Theo mùa'],['limited','Hạn chế']]],['irrigationMethod','Phương pháp tưới','text','Ví dụ: nhỏ giọt, phun, thủ công'],['irrigatedArea','Diện tích đang tưới thực tế (m²)','number','Chỉ nhập phần diện tích thật sự được tưới'],['lastWatering','Lần tưới gần nhất','date',''],['drainageSystem','Hệ thống thoát nước','text','Mô tả hệ thống thoát nước']]},
     {title:'Mục tiêu & nguồn lực',desc:'Mục tiêu, vốn, nhân lực và đầu ra.',fields:[
       ['purpose','Mục đích canh tác','select','',[['income','Tăng thu nhập'],['household','Phục vụ gia đình'],['low-water','Ưu tiên ít nước'],['sustainable','Bền vững lâu dài'],['mixed','Kết hợp nhiều mục tiêu']]],['investment','Mức vốn đầu tư','select','',[['low','Thấp'],['medium','Trung bình'],['high','Cao']]],['labor','Công chăm sóc có thể bố trí','select','',[['low','Ít'],['medium','Vừa'],['high','Nhiều']]],['market','Kênh tiêu thụ dự kiến','text','Ví dụ: HTX, thương lái, chợ địa phương'],['risk','Mức chấp nhận rủi ro','select','',[['low','Thấp'],['medium','Trung bình'],['high','Cao']]],['notes','Ghi chú khác','textarea','Bạn muốn lưu thêm điều gì?']]},
     {title:'Điểm đo cho bản đồ nhiệt',desc:'Nhập ít nhất 3 điểm đo độ ẩm đất tại vườn.',fields:[
@@ -1128,6 +1128,9 @@
     test('Live Demo rotation history has crop entries after the colon',()=>parseRotationHistory({historyText:'2025/vụ xuân: đậu xanh\n2025/vụ thu: ngô\n2026/vụ xuân: đậu tương'}).map(x=>x.crop).join('|')==='đậu xanh|ngô|đậu tương');
     test('Live Demo profile uses valid select choices for farm, terrain and purpose',()=>DEMO_PROFILE.soilType==='loam'&&DEMO_PROFILE.terrain==='hill'&&DEMO_PROFILE.waterAvailability==='seasonal'&&DEMO_PROFILE.purpose==='income');
     test('Every new Live Demo workspace resets profile, crop sequence and assistant context',()=>{const old=demoClone(state);state.profile={...blankProfile,crop:'Cây cũ'};state.rotation={...rotationDefaults,currentCrop:'maize',historyText:'2025: ngô'};state.goal='income';state.assistant=[{role:'user',text:'Tin nhắn cũ'}];state.selectedTree=4;resetLiveDemoWorkspace();const ok=Object.values(state.profile).every(v=>!has(v))&&Object.entries(rotationDefaults).every(([k,v])=>state.rotation[k]===v)&&state.goal==='mixed'&&state.assistant.length===1&&state.assistant[0].role==='assistant'&&state.selectedTree===null;Object.keys(state).forEach(k=>delete state[k]);Object.assign(state,old);return ok;});
+    test('Na is recognized as a perennial orchard without matching banana by substring',()=>irrigationCropProfile('Na').isOrchard&&irrigationCropProfile('banana').isOrchard===false&&irrigationCropProfile('banana').kc===1.10);
+    test('A citrus crop is classified as an orchard and rice is flagged for a separate paddy-water model',()=>irrigationCropProfile('Quýt').isOrchard&&irrigationCropProfile('Lúa').isPaddy);
+    test('Unknown crops do not receive an invented Kc coefficient',()=>irrigationCropProfile('cây chưa xác định').kc===null);
     test('Open-Meteo attribution has a complete Vietnamese and English mode with source and licence links',()=>{const old=openMeteoCreditLanguage;openMeteoCreditLanguage='vi';const vi=openMeteoAttribution();openMeteoCreditLanguage='en';const en=openMeteoAttribution();openMeteoCreditLanguage=old;return vi.includes('Ghi công dữ liệu thời tiết')&&vi.includes('CC BY 4.0')&&en.includes('Weather data attribution')&&en.includes('Weather data by Open-Meteo.com')&&en.includes(SRC.openMeteoLicense);});
     test('Advisor tour scrolls from page start through goals and the full crop ranking',()=>String(demoAdvisorStep).includes('demoScrollThroughPage')&&!String(demoAdvisorStep).includes("demoScroll('.candidate-grid'"));
     test('Rotation tour covers both annual and perennial examples with full-page scrolling',()=>{const body=String(demoRotationStep);return /systemType:'annual'/.test(body)&&/systemType:'perennial'/.test(body)&&(body.match(/demoScrollThroughPage/g)||[]).length>=2;});
@@ -1712,8 +1715,8 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
     go('location');
     liveDemo.waitingForLocationConfirm=true;
     liveDemo.locationConfirmed=false;
-    demoSetStatus('Chưa có vị trí đã xác nhận · đang xác định GPS. Sau đó hãy kiểm tra và bấm “Đúng, dùng vị trí này”.');
-    // Reuse the browser permission request started directly from the Live Demo launch click.
+    demoSetStatus('Chưa có vị trí đã xác nhận · đang mở tab định vị để bạn tự lấy GPS hoặc chọn vị trí vườn.');
+    // GPS permission and location confirmation are user-controlled; Live Demo never accepts them silently.
     let gps=null,gpsSettled=!liveDemo.gpsPromise;
     if(liveDemo.gpsPromise){
       liveDemo.gpsPromise.then(value=>{gps=value;gpsSettled=true;}).catch(()=>{gpsSettled=true;});
@@ -1869,16 +1872,17 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
   }
   async function demoFarm3DStep(runId){
     go('farm3d');
-    if(!await demoDelay(400,runId))return;
+    if(!await demoDelay(500,runId))return;
     if(!await demoCheckpoint(runId))return;
-    demoSetStatus('Thiết kế vườn 3D: Mô phỏng vườn 3D và xem các góc nhìn…');
-    if(!await demoScroll('.twin-visual-panel',runId,1000))return;
     setFarmMode('simulation');
+    setFarmView('orbit');
+    if(!await demoDelay(700,runId))return;
+    demoSetStatus('Thiết kế vườn 3D: Đang đưa mô hình vào chính giữa màn hình…');
+    if(!await demoScroll('.scene',runId,1600))return;
+    setFarmView('top');if(!await demoDelay(1300,runId))return;
+    setFarmView('low');if(!await demoDelay(1300,runId))return;
+    setFarmView('walk');if(!await demoDelay(1300,runId))return;
     setFarmView('orbit');if(!await demoDelay(1100,runId))return;
-    setFarmView('top');if(!await demoDelay(1100,runId))return;
-    setFarmView('low');if(!await demoDelay(1100,runId))return;
-    setFarmView('walk');if(!await demoDelay(1100,runId))return;
-    setFarmView('orbit');if(!await demoDelay(900,runId))return;
     return true;
   }
   async function demoAdvisorStep(runId){
@@ -1993,7 +1997,7 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
     const launch=$('#liveTourLaunch');if(launch)launch.textContent='Đang chuẩn bị…';
     try{
       // Request GPS directly from the launch click only when no confirmed farm location is available.
-      liveDemo.gpsPromise=state.location?Promise.resolve(null):demoRequestGPS();
+      liveDemo.gpsPromise=null;
       if(!reuseSnapshot){
         const pending=()=>state.loading||state.weatherLoading||state.powerLoading||state.soilPowerLoading||state.climateLoading;
         if(pending()){
@@ -2056,135 +2060,143 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
      SATELLITE DAILY IRRIGATION PREDICTOR (WITH MANUAL INPUTS & DEMO RESET)
      & FULL LOSSLESS BILINGUAL (VI / EN)
      ========================================================================== */
+  function irrigationCropProfile(crop){
+    const n=String(crop||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').trim();
+    if(!n)return {kc:null,isOrchard:false,isPaddy:false,label:'Chưa nhập loại cây'};
+    if(/(^|[^a-z])na([^a-z]|$)/.test(n)||n.includes('mang cau')||n.includes('custard apple'))return {kc:0.85,isOrchard:true,isPaddy:false,label:'Na / mãng cầu'};
+    if(/quyt|cam|buoi|chanh|citrus|orange|lemon|pomelo/.test(n))return {kc:0.82,isOrchard:true,isPaddy:false,label:'Nhóm cây có múi'};
+    if(/hoi|que|star anise|cinnamon/.test(n))return {kc:0.80,isOrchard:true,isPaddy:false,label:'Hồi / quế'};
+    if(/ca phe|coffee|che|tea|cacao|cocoa/.test(n))return {kc:0.95,isOrchard:true,isPaddy:false,label:'Cà phê / chè / cacao'};
+    if(/xoai|nhan|vai|oi|bo|mit|sau rieng|du du|tao|le|man|dao|guava|mango|lychee|avocado|jackfruit/.test(n))return {kc:0.85,isOrchard:true,isPaddy:false,label:'Cây ăn quả lâu năm'};
+    if(/thanh long|dragon fruit/.test(n))return {kc:0.68,isOrchard:true,isPaddy:false,label:'Thanh long'};
+    if(/lua|rice|paddy/.test(n))return {kc:1.15,isOrchard:false,isPaddy:true,label:'Lúa nước'};
+    if(/ngo|bap|maize|corn/.test(n))return {kc:0.95,isOrchard:false,isPaddy:false,label:'Ngô'};
+    if(/dau|lac|peanut|bean|soy/.test(n))return {kc:0.80,isOrchard:false,isPaddy:false,label:'Nhóm cây họ đậu'};
+    if(/san|cassava/.test(n))return {kc:0.68,isOrchard:false,isPaddy:false,label:'Sắn'};
+    if(/chuoi|banana/.test(n))return {kc:1.10,isOrchard:false,isPaddy:false,label:'Chuối'};
+    if(/rau|cai|ca chua|tomato|ot|pepper|vegetable/.test(n))return {kc:1.00,isOrchard:false,isPaddy:false,label:'Nhóm rau màu'};
+    return {kc:null,isOrchard:false,isPaddy:false,label:'Chưa có hệ số Kc phù hợp'};
+  }
+
   function computeDailyIrrigationPlan(){
     const p=state.profile||blankProfile;
     const model=computeFarmModel(p);
     const d=state.weather?.daily;
-    const c=state.weather?.current;
-    const pl=latestPower(state.power);
     const smapRoot=nasaSoilSnapshot('root');
     const smapSurf=nasaSoilSnapshot('surface');
+    const readPositive=raw=>{
+      if(!has(raw))return null;
+      const n=Number(String(raw).trim().replace(',','.'));
+      return Number.isFinite(n)&&n>0?n:NaN;
+    };
+    const enteredArea=readPositive(p.area);
+    const areaM2=enteredArea&&Number.isFinite(enteredArea)?enteredArea:(model.valid&&model.area>0?model.area:0);
+    const enteredCount=readPositive(p.treeCount);
+    const treeCount=enteredCount&&Number.isFinite(enteredCount)?Math.round(enteredCount):(model.trees?.length||0);
+    const cropInfo=irrigationCropProfile(p.crop);
 
-    const areaM2=model.valid&&model.area>0?model.area:(has(p.area)&&numVal(p.area)>0?numVal(p.area):(has(state.impact?.areaHa)?numVal(state.impact.areaHa)*10000:0));
-    const treeCount=model.trees?.length>0?model.trees.length:(has(p.treeCount)&&numVal(p.treeCount)>0?Math.round(numVal(p.treeCount)):0);
+    const stage=String(p.growthStage||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
+    const age=readPositive(p.treeAge);
+    let stageFactor=1;
+    if(/cay con|moi trong|uom/.test(stage)||(age!==null&&Number.isFinite(age)&&age<=1))stageFactor=0.68;
+    else if(/kien thiet|phat trien/.test(stage))stageFactor=0.88;
+    else if(/ra hoa|dau qua|nuoi qua|mang qua/.test(stage))stageFactor=1.12;
+    const kc=cropInfo.kc!==null?clamp(cropInfo.kc*stageFactor,0.35,1.35):null;
 
-    const cropStr=String(p.crop||'').toLowerCase();
-    let kcBase=numVal(state.impact?.kc)||0.85;
-    if(/na|mãng cầu/.test(cropStr))kcBase=0.85;
-    else if(/quýt|cam|bưởi|chanh/.test(cropStr))kcBase=0.82;
-    else if(/hồi|quế/.test(cropStr))kcBase=0.80;
-    else if(/cà phê|chè/.test(cropStr))kcBase=0.95;
-    else if(/chuối/.test(cropStr))kcBase=1.10;
-    else if(/lúa/.test(cropStr))kcBase=1.15;
-    else if(/ngô|bắp/.test(cropStr))kcBase=0.95;
-    else if(/đậu|lạc/.test(cropStr))kcBase=0.80;
-    else if(/sắn|thanh long/.test(cropStr))kcBase=0.68;
-
-    const stageStr=String(p.growthStage||'').toLowerCase();
-    const age=has(p.treeAge)?numVal(p.treeAge):null;
-    let stageMult=1.0;
-    if(/cây con|mới trồng|ươm/.test(stageStr)||(age!==null&&age<=1))stageMult=0.68;
-    else if(/kiến thiết|phát triển/.test(stageStr))stageMult=0.88;
-    else if(/ra hoa|đậu quả|nuôi quả|mang quả/.test(stageStr))stageMult=1.12;
-    const kc=clamp(kcBase*stageMult,0.35,1.35);
-
-    const tInfo=treeScaleInfo(p);
-    const singleTreeRootArea=Math.PI*Math.pow(Math.max(0.9,tInfo.crownWidth*1.08)/2,2);
-    let activeAreaRatio=1.0;
-    if(areaM2>0&&treeCount>0){
-      const canopyFraction=clamp((treeCount*singleTreeRootArea)/areaM2,0.15,0.95);
-      activeAreaRatio=clamp(canopyFraction*1.15+0.12,0.28,1.0);
+    let activeAreaM2=null;
+    let areaSource='';
+    let reason='';
+    const rawIrrArea=readPositive(p.irrigatedArea);
+    const rawCrown=readPositive(p.crownWidth);
+    if(has(p.irrigatedArea)){
+      if(rawIrrArea===null||!Number.isFinite(rawIrrArea)){
+        reason='Diện tích đang tưới phải là số lớn hơn 0 m².';
+      }else if(areaM2>0&&rawIrrArea>areaM2){
+        reason='Diện tích đang tưới không được lớn hơn diện tích khu vườn.';
+      }else{
+        activeAreaM2=rawIrrArea;
+        areaSource='Diện tích đang tưới do người dùng nhập';
+      }
+    }else if(cropInfo.isOrchard){
+      if(rawCrown!==null&&Number.isFinite(rawCrown)&&treeCount>0){
+        const crownArea=treeCount*Math.PI*Math.pow(rawCrown/2,2);
+        activeAreaM2=areaM2>0?Math.min(areaM2,crownArea):crownArea;
+        areaSource='Ước tính từ số cây × diện tích hình chiếu tán đo thực tế';
+      }else{
+        reason='Vườn cây lâu năm chưa có diện tích đang tưới hoặc đường kính tán đo thực tế. Hãy nhập một trong hai; website không dùng kích thước tán minh họa 3D để tính.';
+      }
+    }else if(cropInfo.kc!==null&&!cropInfo.isPaddy&&areaM2>0){
+      activeAreaM2=areaM2;
+      areaSource='Tạm giả định toàn bộ diện tích vườn được canh tác và tưới';
+    }else if(cropInfo.kc!==null&&!cropInfo.isPaddy){
+      reason='Chưa có diện tích đang tưới hoặc diện tích vườn hợp lệ.';
     }
 
-    const coverFrac=clamp(Number(state.impact?.coverPct??60),0,100)/100;
-    const evapRed=clamp(Number(state.impact?.evapReduction??15),0,60)/100;
-    const coverSavingFactor=1-(coverFrac*evapRed*0.35);
+    if(!reason&&cropInfo.kc===null)reason='Chưa nhận diện được hệ số Kc cho loại cây này. Hãy chọn/nhập cây đã có hệ số tham khảo hoặc bổ sung dữ liệu Kc phù hợp.';
+    if(!reason&&cropInfo.isPaddy)reason='Lúa nước cần tính thêm nước làm đất, duy trì lớp nước và thấm sâu; công thức ETc đơn giản này không đủ để đưa ra số lít đáng tin cậy.';
+    if(!reason&&!(activeAreaM2>0))reason='Chưa xác định được diện tích thực sự được tưới.';
 
-    const slopeObj=parseSlopeInput(p.slope);
-    const slopeRatio=slopeObj.valid?slopeObj.ratio:0;
-    let effRainFactor=slopeRatio>0.20?0.52:slopeRatio>0.10?0.64:slopeRatio>0.03?0.74:0.82;
-    if(p.drainage==='fast')effRainFactor-=0.06;
-    if(p.drainage==='slow')effRainFactor+=0.05;
-    effRainFactor=clamp(effRainFactor,0.40,0.90);
+    const method=String(p.irrigationMethod||'').toLowerCase();
+    let efficiency=0.75;
+    let efficiencySource='Mặc định 75% vì chưa khai báo phương pháp tưới';
+    if(/nho giot|drip/.test(method)){efficiency=0.90;efficiencySource='Giả định 90% cho tưới nhỏ giọt';}
+    else if(/phun|sprinkler|bec/.test(method)){efficiency=0.75;efficiencySource='Giả định 75% cho tưới phun';}
+    else if(/thu cong|tay|ranh|mat|surface|furrow/.test(method)){efficiency=0.65;efficiencySource='Giả định 65% cho tưới mặt/thủ công';}
 
-    const soilTargetMap={sandy:18,loam:28,mixed:27,alluvial:30,'red-yellow':32,clay:36};
-    const targetMoisture=soilTargetMap[normalizeSoilType(p.soilType)]||28;
-
-    const userSoilM=has(p.soilMoisture)?numVal(p.soilMoisture):null;
-    let rootMoisture=userSoilM!==null?userSoilM:(smapRoot?.value??smapSurf?.value??null);
-    let moistureSource=userSoilM!==null?'Số đo thực tế tại vườn':(smapRoot?'Vệ tinh NASA SMAP RZMC (0–100cm)':(smapSurf?'Vệ tinh NASA SMAP SFMC (0–5cm)':''));
-
-    // Fallback satellite water-balance root moisture if SMAP L4 has latency for current date
-    if(rootMoisture===null){
-      const rhVal=Number(c?.relative_humidity_2m??pl?.rh??68);
-      const rain0=Number(d?.precipitation_sum?.[0]??pl?.rain??0);
-      const eto0=Number(d?.et0_fao_evapotranspiration?.[0]??3.0);
-      rootMoisture=Number(clamp(targetMoisture*(0.76+0.0028*rhVal)+(rain0-eto0)*0.42,14,42).toFixed(1));
-      moistureSource='Vệ tinh NASA POWER & Cân bằng ẩm FAO-56';
-    }
-
-    let soilMoistureAdjMm=0;
-    if(rootMoisture!==null){
-      const diff=targetMoisture-rootMoisture;
-      soilMoistureAdjMm=clamp(diff*0.08,-1.5,1.6);
-    }
-
-    const irrStr=String(p.irrigationMethod||'').toLowerCase();
-    let efficiency=clamp(Number(state.impact?.efficiency??75),30,98)/100;
-    if(/nhỏ giọt|drip/.test(irrStr))efficiency=0.88;
-    else if(/phun|sprinkler|béc/.test(irrStr))efficiency=0.76;
-    else if(/thủ công|tay|rãnh|dí/.test(irrStr))efficiency=0.65;
-
+    const userMoisture=has(p.soilMoisture)?Number(String(p.soilMoisture).trim().replace(',','.')):null;
+    const userMoistureValid=userMoisture!==null&&Number.isFinite(userMoisture)&&userMoisture>=0&&userMoisture<=100;
+    const rootMoisture=userMoistureValid?userMoisture:(smapRoot?.value??smapSurf?.value??null);
+    const moistureSource=userMoistureValid?'Số đo thực tế tại vườn':(smapRoot?'NASA SMAP RZMC · dữ liệu lưới khu vực':(smapSurf?'NASA SMAP SFMC · dữ liệu lưới khu vực':'Chưa có số đo / dữ liệu SMAP'));
     const days=[];
-    const radFallbackEto=pl?.rad?pl.rad*0.408*0.85:3.8;
-    const dayCount=d?.time?.length?Math.min(7,d.time.length):7;
-
+    const dayCount=d?.time?.length?Math.min(7,d.time.length):0;
     for(let i=0;i<dayCount;i++){
-      const dateStr=d?.time?.[i]||'';
-      const eto=Number.isFinite(Number(d?.et0_fao_evapotranspiration?.[i]))?Number(d.et0_fao_evapotranspiration[i]):radFallbackEto;
-      const rain=Number.isFinite(Number(d?.precipitation_sum?.[i]))?Number(d.precipitation_sum[i]):(i===0&&pl?.rain?Number(pl.rain):0);
-      const tMax=Number.isFinite(Number(d?.temperature_2m_max?.[i]))?Number(d.temperature_2m_max[i]):(c?.temperature_2m??pl?.t2m??28);
-
-      const heatStressFactor=tMax>=35?1.12:tMax>=32?1.05:1.0;
-      const etc=eto*kc*heatStressFactor*coverSavingFactor;
-      const peff=rain*effRainFactor;
-      const smapWeight=i===0?1.0:i===1?0.5:0.2;
-      const netMm=Math.max(0,etc-peff+soilMoistureAdjMm*smapWeight);
-      const grossMm=netMm/efficiency;
-
-      const totalLiters=areaM2>0?Math.round(grossMm*areaM2*activeAreaRatio):null;
-      const litersPerTree=(totalLiters!==null&&treeCount>0)?Number((totalLiters/treeCount).toFixed(1)):(treeCount>0?Number(((grossMm*singleTreeRootArea)/efficiency).toFixed(1)):null);
-
+      const dateStr=d.time[i]||'';
+      const etoRaw=d?.et0_fao_evapotranspiration?.[i];
+      const rainRaw=d?.precipitation_sum?.[i];
+      const etoNumber=Number(etoRaw);
+      const rainNumber=Number(rainRaw);
+      const eto=has(etoRaw)&&Number.isFinite(etoNumber)&&etoNumber>=0?etoNumber:null;
+      const rain=has(rainRaw)&&Number.isFinite(rainNumber)&&rainNumber>=0?rainNumber:null;
+      const etc=eto!==null&&kc!==null?eto*kc:null;
+      // Approximation only: 80% of rainfall is treated as effective, capped at ETc.
+      const peff=rain!==null&&etc!==null?Math.min(rain,etc)*0.80:null;
+      const netMm=etc!==null&&peff!==null?Math.max(0,etc-peff):null;
+      const grossMm=netMm!==null?netMm/efficiency:null;
+      const totalLiters=grossMm!==null&&activeAreaM2!==null?Math.round(grossMm*activeAreaM2):null;
+      const litersPerTree=totalLiters!==null&&treeCount>0?Number((totalLiters/treeCount).toFixed(1)):null;
+      const tMaxRaw=d?.temperature_2m_max?.[i];
+      const tMax=has(tMaxRaw)&&Number.isFinite(Number(tMaxRaw))?Number(tMaxRaw):null;
       days.push({index:i,date:dateStr,eto,kc,etc,rain,peff,netMm,grossMm,totalLiters,litersPerTree,tMax});
     }
 
-    const todayPlan=days[0]||{totalLiters:null,litersPerTree:null,netMm:0,etc:0,peff:0,eto:0};
+    const today=days[0]||{totalLiters:null,litersPerTree:null,netMm:null,etc:null,peff:null,eto:null,rain:null};
     const validTotals=days.map(x=>x.totalLiters).filter(v=>v!==null);
     const sum7DayLiters=validTotals.length?validTotals.reduce((a,b)=>a+b,0):null;
-    const avgDailyLiters=sum7DayLiters!==null?Math.round(sum7DayLiters/days.length):null;
-    const avgLitersPerTree=(avgDailyLiters!==null&&treeCount>0)?Number((avgDailyLiters/treeCount).toFixed(1)):todayPlan.litersPerTree;
-
+    const avgDailyLiters=sum7DayLiters!==null?Math.round(sum7DayLiters/validTotals.length):null;
+    const avgLitersPerTree=avgDailyLiters!==null&&treeCount>0?Number((avgDailyLiters/treeCount).toFixed(1)):null;
+    const dataReady=days.length>0&&days.some(x=>x.eto!==null&&x.rain!==null);
+    if(!reason&&!dataReady)reason='Chưa có đủ ET₀ và lượng mưa dự báo từ Open-Meteo cho các ngày sắp tới.';
+    const calculationNote=activeAreaM2!==null?areaSource+'. 1 mm nước trên 1 m² tương đương 1 lít. '+efficiencySource+'.':'';
     return {
-      areaM2,treeCount,kc,efficiency:Math.round(efficiency*100),effRainPct:Math.round(effRainFactor*100),
-      rootMoisture,moistureSource,
-      today:todayPlan,avgDailyLiters,avgLitersPerTree,sum7DayLiters,days
+      areaM2,activeAreaM2,areaSource,treeCount,kc,efficiency:Math.round(efficiency*100),efficiencySource,
+      effectiveRainPct:80,rootMoisture,moistureSource,today,avgDailyLiters,avgLitersPerTree,
+      sum7DayLiters,days,reason,calculationNote,dataReady
     };
   }
 
   function dailyIrrigationTableHTML(ir){
-    const hasAreaOrTrees=ir.areaM2>0||ir.treeCount>0;
-    if(!hasAreaOrTrees||!ir.days.length)return '';
+    if(!ir.days.length)return '<div class="impact-method">Chưa có dữ liệu dự báo 7 ngày để lập bảng tưới.</div>';
     return `<div class="table-scroll" style="margin-top:12px">
       <table class="forecast-table">
         <thead>
-          <tr><th>Ngày</th><th>ET₀ (Vệ tinh/Mẫu)</th><th>ETc cây trồng</th><th>Mưa hữu hiệu (GPM/SRTM)</th><th>Cần tưới toàn vườn</th><th>Định mức / 1 cây</th></tr>
+          <tr><th>Ngày</th><th>ET₀ (Open-Meteo)</th><th>ETc ước tính</th><th>Mưa hữu hiệu ước tính</th><th>Nước tưới toàn vùng đang tưới</th><th>Trung bình / cây</th></tr>
         </thead>
         <tbody>
           ${ir.days.map((d,i)=>`<tr>
-            <td>${i===0?'Hôm nay':(d.date?new Date(d.date+'T12:00:00').toLocaleDateString('vi-VN',{weekday:'short',day:'2-digit',month:'2-digit'}):`Ngày ${i+1}`)}</td>
-            <td>${fmt(d.eto,1)} mm</td>
-            <td>${fmt(d.etc,1)} mm</td>
-            <td>${fmt(d.peff,1)} mm</td>
+            <td>${i===0?'Hôm nay':(d.date?new Date(d.date+'T12:00:00').toLocaleDateString(siteLanguage==='en'?'en-US':'vi-VN',{weekday:'short',day:'2-digit',month:'2-digit'}):`Ngày ${i+1}`)}</td>
+            <td>${d.eto!==null?fmt(d.eto,1)+' mm':'—'}</td>
+            <td>${d.etc!==null?fmt(d.etc,1)+' mm':'—'}</td>
+            <td>${d.peff!==null?fmt(d.peff,1)+' mm':'—'}</td>
             <td><b>${d.totalLiters!==null?fmt(d.totalLiters,0)+' L/ngày':'—'}</b></td>
             <td><b>${d.litersPerTree!==null?fmt(d.litersPerTree,1)+' L/cây':'—'}</b></td>
           </tr>`).join('')}
@@ -2197,12 +2209,14 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
     const ir=computeDailyIrrigationPlan();
     const p=state.profile||blankProfile;
     const soilOpts=[['','Tự động theo vùng'],['loam','Đất thịt'],['clay','Đất sét'],['sandy','Đất cát'],['alluvial','Đất phù sa'],['red-yellow','Đất feralit đỏ vàng'],['mixed','Đất pha']];
+    const totalText=ir.today.totalLiters!==null?`${fmt(ir.today.totalLiters,0)} L / ngày`:'Chưa đủ dữ liệu';
+    const treeText=ir.today.litersPerTree!==null?`${fmt(ir.today.litersPerTree,1)} L / cây / ngày`:'Chưa đủ dữ liệu';
     return `<section class="panel impact-panel" id="satelliteIrrigationPanel">
       <div class="impact-head">
         <div>
-          <span class="eyebrow">SATELLITE WATER BALANCE · NASA SMAP + POWER + GPM/ERA5 + SRTM + FAO-56</span>
+          <span class="eyebrow">DAILY CROP WATER BALANCE · OPEN-METEO + FAO-56</span>
           <h2>Dự đoán lượng nước tưới tự động mỗi ngày</h2>
-          <p id="autoWaterHeaderDesc">Tính toán trực tiếp từ số liệu vệ tinh tại tọa độ (${state.location?`${state.location.lat.toFixed(4)}, ${state.location.lon.toFixed(4)}`:'chưa chọn'}), diện tích vườn (${ir.areaM2?fmt(ir.areaM2,0)+' m²':'chưa nhập'}), số cây (${ir.treeCount||'chưa nhập'}) và loại đất.</p>
+          <p id="autoWaterHeaderDesc">Ước tính theo ET₀ dự báo, hệ số Kc của cây, mưa dự báo và diện tích thực sự được tưới.</p>
         </div>
         <div class="irrigation-head-actions">
           <button type="button" class="btn outline small" data-action="reset-irrigation" title="Đặt lại thông số nhập thủ công">↻ Đặt lại</button>
@@ -2210,33 +2224,39 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
         </div>
       </div>
       <div class="impact-inputs">
-        <label class="field"><span class="label">Diện tích vườn (m²)</span><input type="number" min="1" max="10000000" step="any" data-profile="area" value="${esc(p.area||'')}" placeholder="Ví dụ: 2000"></label>
-        <label class="field"><span class="label">Số lượng cây</span><input type="number" min="1" max="2500" step="1" data-profile="treeCount" value="${esc(p.treeCount||'')}" placeholder="Ví dụ: 80"></label>
+        <label class="field"><span class="label">Diện tích khu vườn (m²)</span><input type="number" min="1" max="10000000" step="any" data-profile="area" value="${esc(p.area||'')}" placeholder="Ví dụ: 2000"></label>
+        <label class="field"><span class="label">Số lượng cây</span><input type="number" min="1" max="2500" step="1" data-profile="treeCount" value="${esc(p.treeCount||'')}" placeholder="Ví dụ: 4"></label>
         <label class="field"><span class="label">Loại cây trồng</span><input type="text" data-profile="crop" value="${esc(p.crop||'')}" placeholder="Ví dụ: Na, Quýt, Hồi"></label>
+        <label class="field"><span class="label">Diện tích đang tưới thực tế (m²)</span><input type="number" min="0.1" max="10000000" step="any" data-profile="irrigatedArea" value="${esc(p.irrigatedArea||'')}" placeholder="Nhập diện tích vùng có tưới"></label>
+        <label class="field"><span class="label">Đường kính tán đo thực tế (m)</span><input type="number" min="0.1" max="60" step="any" data-profile="crownWidth" value="${esc(p.crownWidth||'')}" placeholder="Chỉ nhập khi đã đo"></label>
         <label class="field"><span class="label">Loại đất</span><select data-profile="soilType">${soilOpts.map(([v,l])=>`<option value="${v}" ${p.soilType===v?'selected':''}>${l}</option>`).join('')}</select></label>
         <label class="field"><span class="label">Phương pháp tưới</span><input type="text" data-profile="irrigationMethod" value="${esc(p.irrigationMethod||'')}" placeholder="Nhỏ giọt, phun, thủ công"></label>
-        <label class="field"><span class="label">Độ ẩm đất đo thực tế (%)</span><input type="number" min="0" max="100" step="any" data-profile="soilMoisture" value="${esc(p.soilMoisture||'')}" placeholder="Trống = tự lấy vệ tinh"></label>
+        <label class="field"><span class="label">Độ ẩm đất đo thực tế (%)</span><input type="number" min="0" max="100" step="any" data-profile="soilMoisture" value="${esc(p.soilMoisture||'')}" placeholder="Không có thì để trống"></label>
       </div>
       <div class="impact-results">
         <div>
-          <small>CẦN TƯỚI HÔM NAY (TOÀN VƯỜN)</small>
-          <b id="autoWaterToday">${ir.today.totalLiters!==null?`${fmt(ir.today.totalLiters,0)} L / ngày`:'Nhập diện tích vườn'}</b>
-          <span id="autoWaterTodaySub">ET₀ ${fmt(ir.today.eto,1)} mm · Kc ${fmt(ir.kc,2)} · Mưa hữu hiệu ${fmt(ir.today.peff,1)} mm · Hiệu suất tưới ${ir.efficiency}%</span>
+          <small>CẦN TƯỚI HÔM NAY (VÙNG ĐANG TƯỚI)</small>
+          <b id="autoWaterToday">${totalText}</b>
+          <span id="autoWaterTodaySub">${ir.reason?esc(ir.reason):'ET₀ × Kc − mưa hữu hiệu, sau đó chia cho hiệu suất tưới.'}</span>
         </div>
         <div>
-          <small>ĐỊNH MỨC TƯỚI 1 GỐC CÂY HÔM NAY</small>
-          <b id="autoWaterPerTree">${ir.today.litersPerTree!==null?`${fmt(ir.today.litersPerTree,1)} L / cây / ngày`:'Nhập số lượng cây'}</b>
-          <span id="autoWaterPerTreeSub">${ir.treeCount>0?`Tính cho ${ir.treeCount} cây (${esc(p.crop||'Cây trồng')})`:'Nhập số lượng cây ở trên để chia định mức mỗi gốc'}</span>
+          <small>TRUNG BÌNH TƯỚI CHO 1 CÂY HÔM NAY</small>
+          <b id="autoWaterPerTree">${treeText}</b>
+          <span id="autoWaterPerTreeSub">${ir.treeCount>0?`Tính trung bình cho ${ir.treeCount} cây`:'Nhập số cây để chia lượng tưới theo từng cây.'}</span>
         </div>
         <div>
-          <small>TRUNG BÌNH 7 NGÀY & ĐỘ ẨM VÙNG RỄ</small>
-          <b id="autoWaterAvg7">${ir.avgDailyLiters!==null?`${fmt(ir.avgDailyLiters,0)} L / ngày`:(ir.rootMoisture!==null?`Ẩm rễ: ${fmt(ir.rootMoisture,1)}%`:'Chưa đủ dữ liệu')}</b>
-          <span id="autoWaterAvg7Sub">Độ ẩm đất vùng rễ: ${ir.rootMoisture!==null?`${fmt(ir.rootMoisture,1)}% (${ir.moistureSource})`:'—'} · Tổng 7 ngày: ${ir.sum7DayLiters!==null?fmt(ir.sum7DayLiters,0)+' L':'—'}</span>
+          <small>TRUNG BÌNH NGÀY CÓ DỰ BÁO · 7 NGÀY</small>
+          <b id="autoWaterAvg7">${ir.avgDailyLiters!==null?`${fmt(ir.avgDailyLiters,0)} L / ngày`:'Chưa đủ dữ liệu'}</b>
+          <span id="autoWaterAvg7Sub">${ir.activeAreaM2!==null?`Diện tích tính toán: ${fmt(ir.activeAreaM2,1)} m² · ${esc(ir.areaSource)}`:'Cần xác định diện tích thực sự được tưới.'}</span>
         </div>
       </div>
       <div id="autoWaterTableWrap">${dailyIrrigationTableHTML(ir)}</div>
+      <div class="impact-method" id="autoWaterMethod">
+        <b>Cách tính:</b> ETc = ET₀ × Kc; lượng tưới (mm) = max(0, ETc − mưa hữu hiệu) ÷ hiệu suất tưới; số lít = mm × diện tích đang tưới (m²). Mỗi 1 mm trên 1 m² tương đương 1 lít.
+        <span id="autoWaterCalcNote">${esc(ir.calculationNote||ir.reason||'Chưa đủ dữ liệu để tính. Với vườn cây lâu năm, nhập diện tích đang tưới hoặc đường kính tán đo thực tế.')}</span>
+      </div>
       <div class="source-note" style="margin-top:10px">
-        <i class="source-dot"></i>Nguồn tích hợp: NASA SMAP L4 (SFMC/RZMC) · NASA POWER (T2M, RH2M, ALLSKY_SFC_SW_DWN, PRECTOTCORR) · GPM/IMERG & Open-Meteo ERA5 (ET₀, lượng mưa) · SRTM DEM (Độ dốc dòng chảy) · FAO-56 & FAO GAEZ (Hệ số Kc).
+        <i class="source-dot"></i>ET₀ và mưa dự báo: Open-Meteo · Kc tham khảo theo FAO-56 và cần hiệu chỉnh theo giống, giai đoạn, mật độ · NASA SMAP chỉ hiển thị độ ẩm đất dạng lưới khu vực, không tự cộng/trừ vào số lít.
       </div>
     </section>`;
   }
@@ -2245,21 +2265,22 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
     const panel=$('#satelliteIrrigationPanel');
     if(!panel)return;
     const ir=computeDailyIrrigationPlan();
-    const p=state.profile||blankProfile;
     const desc=$('#autoWaterHeaderDesc');
-    if(desc)desc.textContent=`Tính toán trực tiếp từ số liệu vệ tinh tại tọa độ (${state.location?`${state.location.lat.toFixed(4)}, ${state.location.lon.toFixed(4)}`:'chưa chọn'}), diện tích vườn (${ir.areaM2?fmt(ir.areaM2,0)+' m²':'chưa nhập'}), số cây (${ir.treeCount||'chưa nhập'}) và loại đất.`;
+    if(desc)desc.textContent='Ước tính theo ET₀ dự báo, hệ số Kc, mưa dự báo và diện tích thực sự được tưới.';
     const tToday=$('#autoWaterToday');
-    if(tToday)tToday.textContent=ir.today.totalLiters!==null?`${fmt(ir.today.totalLiters,0)} L / ngày`:'Nhập diện tích vườn';
+    if(tToday)tToday.textContent=ir.today.totalLiters!==null?`${fmt(ir.today.totalLiters,0)} L / ngày`:'Chưa đủ dữ liệu';
     const tTodaySub=$('#autoWaterTodaySub');
-    if(tTodaySub)tTodaySub.textContent=`ET₀ ${fmt(ir.today.eto,1)} mm · Kc ${fmt(ir.kc,2)} · Mưa hữu hiệu ${fmt(ir.today.peff,1)} mm · Hiệu suất tưới ${ir.efficiency}%`;
+    if(tTodaySub)tTodaySub.textContent=ir.today.totalLiters!==null?`ET₀ ${fmt(ir.today.eto,1)} mm · Kc ${fmt(ir.kc,2)} · Mưa hữu hiệu ${fmt(ir.today.peff,1)} mm · Hiệu suất ${ir.efficiency}%`:(ir.reason||'Chưa có đủ ET₀, mưa và diện tích để tính.');
     const tTree=$('#autoWaterPerTree');
-    if(tTree)tTree.textContent=ir.today.litersPerTree!==null?`${fmt(ir.today.litersPerTree,1)} L / cây / ngày`:'Nhập số lượng cây';
+    if(tTree)tTree.textContent=ir.today.litersPerTree!==null?`${fmt(ir.today.litersPerTree,1)} L / cây / ngày`:'Chưa đủ dữ liệu';
     const tTreeSub=$('#autoWaterPerTreeSub');
-    if(tTreeSub)tTreeSub.textContent=ir.treeCount>0?`Tính cho ${ir.treeCount} cây (${p.crop||'Cây trồng'})`:'Nhập số lượng cây ở trên để chia định mức mỗi gốc';
+    if(tTreeSub)tTreeSub.textContent=ir.today.litersPerTree!==null?`Tổng ${fmt(ir.today.totalLiters,0)} L chia trung bình cho ${ir.treeCount} cây; đây không phải số đo riêng từng gốc.`:(ir.treeCount>0?(ir.reason||'Chưa xác định được diện tích tưới cho từng cây.'):'Nhập số lượng cây để tính mức trung bình mỗi cây.');
     const tAvg=$('#autoWaterAvg7');
     if(tAvg)tAvg.textContent=ir.avgDailyLiters!==null?`${fmt(ir.avgDailyLiters,0)} L / ngày`:(ir.rootMoisture!==null?`Ẩm rễ: ${fmt(ir.rootMoisture,1)}%`:'Chưa đủ dữ liệu');
     const tAvgSub=$('#autoWaterAvg7Sub');
-    if(tAvgSub)tAvgSub.textContent=`Độ ẩm đất vùng rễ: ${ir.rootMoisture!==null?`${fmt(ir.rootMoisture,1)}% (${ir.moistureSource})`:'—'} · Tổng 7 ngày: ${ir.sum7DayLiters!==null?fmt(ir.sum7DayLiters,0)+' L':'—'}`;
+    if(tAvgSub)tAvgSub.textContent=ir.activeAreaM2!==null?`Diện tích tính toán: ${fmt(ir.activeAreaM2,1)} m² · ${ir.areaSource} · Có số tưới cho ${ir.days.filter(x=>x.totalLiters!==null).length}/${ir.days.length} ngày`:(ir.reason||'Cần nhập diện tích đang tưới thực tế.');
+    const calc=$('#autoWaterCalcNote');
+    if(calc)calc.textContent=ir.calculationNote||ir.reason||'Chưa đủ dữ liệu để tính.';
     const tbl=$('#autoWaterTableWrap');
     if(tbl)tbl.innerHTML=dailyIrrigationTableHTML(ir);
     if(siteLanguage==='en')applyFullSiteLanguage('en');
@@ -2540,6 +2561,56 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
     ['Nguồn API, tài liệu, thư viện và giấy phép của các thành phần đang dùng trong website.', 'APIs, satellite datasets, libraries, and open-source licenses used in this platform.'],
     ['Mở tài liệu / giấy phép ↗', 'Open documentation / license ↗'],
     ['Giấy phép và ghi công', 'Licenses & Attribution']
+
+    ['Diện tích đang tưới thực tế (m²)', 'Actual Irrigated Area (m²)'],
+    ['Đường kính tán đo thực tế (m)', 'Measured Canopy Diameter (m)'],
+    ['Diện tích khu vườn (m²)', 'Garden Plot Area (m²)'],
+    ['Diện tích thực sự được tưới', 'Area Actually Irrigated'],
+    ['Trung bình tưới cho 1 cây hôm nay', 'Average Water per Plant Today'],
+    ['Trung bình ngày có dự báo · 7 ngày', 'Average for Forecast Days · 7 Days'],
+    ['Cần tưới hôm nay (vùng đang tưới)', 'Water Needed Today (Irrigated Area)'],
+    ['Chưa đủ dữ liệu', 'Insufficient data'],
+    ['Chưa có đủ dữ liệu dự báo 7 ngày để lập bảng tưới.', 'No 7-day forecast data available for the irrigation table.'],
+    ['Với vườn cây lâu năm, nhập diện tích đang tưới hoặc đường kính tán đo thực tế.', 'For perennial orchards, enter the actual irrigated area or a measured canopy diameter.'],
+    ['Diện tích đang tưới do người dùng nhập', 'User-entered irrigated area'],
+    ['Ước tính từ số cây × diện tích hình chiếu tán đo thực tế', 'Estimated from plant count × measured canopy projection area'],
+    ['Tạm giả định toàn bộ diện tích vườn được canh tác và tưới', 'Assuming the entire plot is cultivated and irrigated'],
+    ['Chưa có hệ số Kc phù hợp', 'No suitable Kc coefficient available'],
+    ['Chưa nhận diện được hệ số Kc cho loại cây này. Hãy chọn/nhập cây đã có hệ số tham khảo hoặc bổ sung dữ liệu Kc phù hợp.', 'No Kc coefficient is available for this crop. Select a crop with a reference coefficient or provide a suitable Kc value.'],
+    ['Vườn cây lâu năm chưa có diện tích đang tưới hoặc đường kính tán đo thực tế. Hãy nhập một trong hai; website không dùng kích thước tán minh họa 3D để tính.', 'The orchard has no actual irrigated area or measured canopy diameter. Enter one; illustrative 3D canopy dimensions are never used in the calculation.'],
+    ['Diện tích đang tưới phải là số lớn hơn 0 m².', 'Irrigated area must be a number greater than 0 m².'],
+    ['Diện tích đang tưới không được lớn hơn diện tích khu vườn.', 'Irrigated area cannot exceed the garden plot area.'],
+    ['Lúa nước cần tính thêm nước làm đất, duy trì lớp nước và thấm sâu; công thức ETc đơn giản này không đủ để đưa ra số lít đáng tin cậy.', 'Paddy rice also requires water for land preparation, ponding, and percolation; this simple ETc formula is insufficient for a reliable litre estimate.'],
+    ['Chưa xác định được diện tích thực sự được tưới.', 'The actually irrigated area has not been determined.'],
+    ['Chưa có dự báo ET₀ và lượng mưa từ Open-Meteo cho các ngày sắp tới.', 'Open-Meteo ET₀ and rainfall forecasts are not available for the coming days.'],
+    ['Chưa có dự báo ET₀ và lượng mưa dự báo từ Open-Meteo cho các ngày sắp tới.', 'Open-Meteo ET₀ and rainfall forecasts are not available for the coming days.'],
+    ['ET₀ và mưa dự báo: Open-Meteo', 'Forecast ET₀ and rainfall: Open-Meteo'],
+    ['Mưa hữu hiệu ước tính', 'Estimated Effective Rainfall'],
+    ['Nước tưới toàn vùng đang tưới', 'Water for Irrigated Area'],
+    ['Trung bình / cây', 'Average / Plant'],
+    ['Cách tính:', 'Method:'],
+    ['Diện tích tính toán:', 'Calculation area:'],
+    ['Mặc định 75% vì chưa khai báo phương pháp tưới', '75% default because irrigation method is not specified'],
+    ['Giả định 90% cho tưới nhỏ giọt', '90% assumed for drip irrigation'],
+    ['Giả định 75% cho tưới phun', '75% assumed for sprinkler irrigation'],
+    ['Giả định 65% cho tưới mặt/thủ công', '65% assumed for surface/manual irrigation'],
+    ['Chưa có số đo / dữ liệu SMAP', 'No measurement / SMAP data available'],
+    ['dữ liệu lưới khu vực', 'regional gridded data'],
+    ['Độ ẩm đất chỉ dùng để tham khảo, không tự cộng/trừ vào số lít.', 'Soil moisture is contextual only and is not automatically added to or subtracted from the litre estimate.'],
+    ['Trung bình cho', 'Average for'],
+    ['cây; đây không phải số đo riêng từng gốc.', 'plants; this is not an individual measurement for each plant.'],
+    ['Nhập số lượng cây để tính mức trung bình mỗi cây.', 'Enter plant count to calculate the per-plant average.'],
+    ['ET₀ dự báo', 'Forecast ET₀'],
+    ['mưa hữu hiệu', 'effective rainfall'],
+    ['Hiệu suất', 'Efficiency'],
+    ['Tưới cho', 'Irrigation for'],
+    ['Chỉ nhập khi đã đo', 'Enter only if measured'],
+    ['Không có thì để trống', 'Leave blank if unavailable'],
+    ['Nhập diện tích vùng có tưới', 'Enter the area that is actually irrigated'],
+    ['Chưa đủ dữ liệu để tính.', 'Insufficient data to calculate.'],
+    ['Hãy nhập một trong hai', 'Enter one of the two values'],
+    ['Đang đưa mô hình vào chính giữa màn hình…', 'Centering the 3D model in the viewport…'],
+    ['Chưa có vị trí đã xác nhận · đang mở tab định vị để bạn tự lấy GPS hoặc chọn vị trí vườn.', 'No confirmed location yet · opening the location tab so you can request GPS or choose the farm location.'],
   ].sort((a, b) => b[0].length - a[0].length);
 
   function translateViToEnText(orig) {
@@ -2613,14 +2684,18 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
         node.__lastRendered = node.nodeValue;
       }
 
-      $$('[placeholder],[title]').forEach(el => {
-        if (el.hasAttribute('placeholder')) {
-          const curP = el.getAttribute('placeholder') || '';
-          if (el.__lastPlaceholder !== curP) el.__origPlaceholder = curP;
-          const nextP = siteLanguage === 'en' ? translateViToEnText(el.__origPlaceholder || curP) : (el.__origPlaceholder || curP);
-          if (curP !== nextP) el.setAttribute('placeholder', nextP);
-          el.__lastPlaceholder = nextP;
-        }
+      $('[placeholder],[title],[aria-label]').forEach(el => {
+        ['placeholder','title','aria-label'].forEach(attr => {
+          if (!el.hasAttribute(attr)) return;
+          const cur = el.getAttribute(attr) || '';
+          const origKey = '__origAttr_' + attr;
+          const lastKey = '__lastAttr_' + attr;
+          if (el[lastKey] !== cur) el[origKey] = cur;
+          const base = el[origKey] !== undefined ? el[origKey] : cur;
+          const next = siteLanguage === 'en' ? translateViToEnText(base) : base;
+          if (cur !== next) el.setAttribute(attr, next);
+          el[lastKey] = next;
+        });
       });
     } finally {
       _isApplyingLang = false;
@@ -2668,7 +2743,7 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
     }
     const resetIrrBtn = e.target.closest('[data-action="reset-irrigation"]');
     if (resetIrrBtn) {
-      ['area','treeCount','crop','soilType','irrigationMethod','soilMoisture'].forEach(k => { state.profile[k] = ''; });
+      ['area','treeCount','crop','irrigatedArea','crownWidth','soilType','irrigationMethod','soilMoisture'].forEach(k => { state.profile[k] = ''; });
       save();
       render();
       toast(siteLanguage === 'en' ? 'Irrigation parameters reset.' : 'Đã đặt lại thông số nước tưới.');

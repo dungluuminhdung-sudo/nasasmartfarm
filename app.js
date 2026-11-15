@@ -2267,13 +2267,13 @@ Việc tiếp theo: cập nhật số đo đất, ghi lượng mưa thực nhậ
     const tToday=$('#autoWaterToday');
     if(tToday)tToday.textContent=ir.today.totalLiters!==null?`${fmt(ir.today.totalLiters,0)} L / ngày`:'Chưa đủ dữ liệu';
     const tTodaySub=$('#autoWaterTodaySub');
-    if(tTodaySub)tTodaySub.textContent=ir.today.totalLiters!==null?`ET₀ ${fmt(ir.today.eto,1)} mm · Kc ${fmt(ir.kc,2)} · Mưa hữu hiệu ${fmt(ir.today.peff,1)} mm · Hiệu suất ${ir.efficiency}`%:(ir.reason||'Chưa có đủ ET₀, mưa và diện tích để tính.');
+    if(tTodaySub)tTodaySub.textContent=ir.today.totalLiters!==null?`ET₀ ${fmt(ir.today.eto,1)} mm · Kc ${fmt(ir.kc,2)} · Mưa hữu hiệu ${fmt(ir.today.peff,1)} mm · Hiệu suất ${ir.efficiency}%`:(ir.reason||'Chưa có đủ ET₀, mưa và diện tích để tính.');
     const tTree=$('#autoWaterPerTree');
     if(tTree)tTree.textContent=ir.today.litersPerTree!==null?`${fmt(ir.today.litersPerTree,1)} L / cây / ngày`:'Chưa đủ dữ liệu';
     const tTreeSub=$('#autoWaterPerTreeSub');
     if(tTreeSub)tTreeSub.textContent=ir.today.litersPerTree!==null?`Tổng ${fmt(ir.today.totalLiters,0)} L chia trung bình cho ${ir.treeCount} cây; đây không phải số đo riêng từng gốc.`:(ir.treeCount>0?(ir.reason||'Chưa xác định được diện tích tưới cho từng cây.'):'Nhập số lượng cây để tính mức trung bình mỗi cây.');
     const tAvg=$('#autoWaterAvg7');
-    if(tAvg)tAvg.textContent=ir.avgDailyLiters!==null?`${fmt(ir.avgDailyLiters,0)} L / ngày`:(ir.rootMoisture!==null?`Ẩm rễ: ${fmt(ir.rootMoisture,1)}`%:'Chưa đủ dữ liệu');
+    if(tAvg)tAvg.textContent=ir.avgDailyLiters!==null?`${fmt(ir.avgDailyLiters,0)} L / ngày`:(ir.rootMoisture!==null?`Ẩm rễ: ${fmt(ir.rootMoisture,1)}%`:'Chưa đủ dữ liệu');
     const tAvgSub=$('#autoWaterAvg7Sub');
     if(tAvgSub)tAvgSub.textContent=ir.activeAreaM2!==null?`Diện tích tính toán: ${fmt(ir.activeAreaM2,1)} m² · ${ir.areaSource} · Có số tưới cho ${ir.days.filter(x=>x.totalLiters!==null).length}/${ir.days.length} ngày`:(ir.reason||'Cần nhập diện tích đang tưới thực tế.');
     const calc=$('#autoWaterCalcNote');
